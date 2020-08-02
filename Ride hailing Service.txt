@@ -1,0 +1,1368 @@
+-- Dropping the tables and Sequences
+Drop table Payment cascade CONSTRAINTS;
+Drop table Trips cascade CONSTRAINTS;
+Drop table distances cascade CONSTRAINTS;
+Drop TABLE Customers cascade CONSTRAINTS;
+Drop TABLE Vehicles cascade CONSTRAINTS;
+Drop table Vehicle_Owner cascade CONSTRAINTS;
+Drop table Vehicle_Types cascade CONSTRAINTS;
+----------------------------------------------------------------------
+Drop SEQUENCE VO_seq;
+Drop Sequence V_seq;
+Drop sequence C_seq;
+DROP SEQUENCE T_seq;
+Drop sequence P_seq;
+
+-----------------------------------------------------
+--Creating all the Tables and sequences
+CREATE TABLE Vehicle_Types
+(V_type  VARCHAR2(50) primary key not null,
+V_rate Float
+);
+
+INSERT INTO Vehicle_Types VALUES ('Sedan', 1);
+INSERT INTO Vehicle_Types VALUES ('Truck', 1);
+INSERT INTO Vehicle_Types VALUES ('Crossover',1.5);
+INSERT INTO Vehicle_Types VALUES ('Minivan',2);
+INSERT INTO Vehicle_Types VALUES ('SUV',2);
+INSERT INTO Vehicle_Types VALUES ('Bus',5);
+
+--SELECT  *  from Vehicle_Types;
+
+---------------------------------------------------------------
+
+CREATE SEQUENCE VO_seq
+START WITH 1 
+INCREMENT BY 1;
+
+
+create table Vehicle_Owner (
+VO_ID int,
+VO_name varchar2(50),
+email_ID varchar2(50),
+CC_Number number(16) unique,
+CHECK(email_ID like '%_@__%.__%'),
+O_status int check (O_status in (0,1)),
+primary key(VO_ID)
+);
+
+
+--select * from vehicle_owner;
+--------------------------------------------------------------------------------
+
+CREATE SEQUENCE V_seq
+START WITH 1 
+INCREMENT BY 1;
+
+CREATE TABLE Vehicles
+(
+V_Id  number primary key not null,
+VO_Id number,
+V_type varchar2(50),
+V_make varchar2(50),
+V_year number,
+V_tag varchar2(50),
+ST varchar2(50),
+S_cap number,
+L_cap number,
+L_LOC VARCHAR2(50),
+Foreign key (VO_Id) references Vehicle_Owner(VO_Id),
+Foreign key (V_type) references Vehicle_Types(V_type)
+);
+
+
+
+--Select * from Vehicles;
+
+--------------------------------------------------------------------------------------
+
+CREATE SEQUENCE C_seq
+START WITH 1 
+INCREMENT BY 1;
+
+CREATE TABLE Customers
+(
+C_Id number primary key,
+C_name varchar2(100),
+C_email varchar2(50),
+C_CCN number,
+c_status int check (c_status in (0,1))
+);
+
+
+--Select * from Customers;
+
+---------------------------------------------------------------
+
+Create table distances(
+Src_town varchar2(30),
+Src_state varchar2(30),
+des_town varchar2(30),
+des_state varchar2(30),
+dist FLOAT,
+primary key (Src_town,Src_state,des_town,des_state));
+
+--TEMPORARY DISTANCE TABLE FOR MULTI-LEG
+drop table temp_DISTANCE;
+create table temp_distance(
+Route varchar2(400) ,
+route_DIST varchar2(400) ,
+total_DIST varchar2(400));
+
+--Select * from distances;
+
+---------------------------------------------
+
+CREATE SEQUENCE T_seq
+START WITH 1 
+INCREMENT BY 1;
+
+
+CREATE TABLE Trips (
+Trip_Id number,
+C_Id number,
+VO_Id number,
+V_ID NUMBER,
+Src_town varchar2(30),
+Src_state varchar2(30),
+des_town varchar2(30),
+des_state varchar2(30),
+Trip_date Date,
+num_trv int,
+Trip_fare float,
+luggage number,
+primary key (Trip_Id),
+Foreign key (C_Id) references Customers (C_Id),
+Foreign key (VO_Id) references Vehicle_Owner (VO_Id),
+foreign key (Src_town,Src_state,des_town,des_state) references Distances (Src_town,Src_state,des_town,des_state),
+FOREIGN KEY (V_ID) references VEHICLES(V_ID)
+);
+
+
+
+
+--SELECT * FROM trips;
+
+---------------------------------------------------------------------------------------------------------
+
+CREATE SEQUENCE P_seq
+START WITH 1 
+INCREMENT BY 1;
+
+create table Payment (
+Payment_ID number primary key,
+Trip_ID number,
+C_ID number,
+VO_id number,
+Amt_positive float, 
+Amt_negative float,
+payment_date timestamp,
+foreign key (Trip_ID) references Trips(Trip_ID),
+foreign key (C_ID) references Customers(C_ID),
+foreign key (VO_ID) references Vehicle_Owner(VO_ID)
+);
+
+
+
+--Select * from Payment;
+
+--Select * from Payment;
+--SELECT * FROM trips;
+--Select * from distances;
+--Select * from Customers;
+--Select * from Vehicles;
+--select * from vehicle_owner;
+--SELECT * from Vehicle_Types;
+
+------------------------------------------------------------------------------------------------------------------
+set serveroutput on;
+-----TASKS
+
+--MEMBER 1
+---2. Add owner: Given information about an owner, add it to the table.
+create or replace procedure Add_owner(VAR_VO_NAME vehicle_owner.VO_NAME%TYPE, VAR_EMAIL vehicle_owner.EMAIL_ID%TYPE ,
+VAR_CC vehicle_owner.CC_NUMBER%TYPE, VAR_O_STATUS vehicle_owner.O_STATUS%type) is 
+--takes in vehicle_owner name , email , and cradit card number,and status 
+begin 
+INSERT INTO vehicle_owner VALUES (VO_seq.nextval,VAR_VO_NAME,VAR_EMAIL,VAR_CC,VAR_O_STATUS);
+dbms_output.put_line('new vehicle owner added');
+exception
+WHEN OTHERS THEN
+DBMS_OUTPUT.PUT_LINE('Invalid Input');
+END;
+/
+
+EXEC Add_owner('Joe', 'joe@umbc.edu',123456,1);
+EXEC Add_owner('Kathy', 'kathy@abc.com',234567,1);
+EXEC Add_owner('Pat', 'pat@yahoo.com',123234,1);
+
+/
+Select * from vehicle_owner;
+/
+
+
+---3. Add a new vehicle with all needed parameter values
+
+create or replace procedure Add_vehicle (VAR_VO_ID vehicles.VO_ID%TYPE, VAR_V_TYPE vehicles.V_TYPE%TYPE ,
+                                        VAR_V_MAKE vehicles.V_MAKE%TYPE, VAR_V_YEAR vehicles.V_YEAR%TYPE, 
+                                        VAR_V_TAG vehicles.V_TAG%TYPE, VAR_ST vehicles.ST%TYPE,
+                                        VAR_S_CAP vehicles.S_CAP%TYPE, VAR_L_CAP vehicles.L_CAP%TYPE,
+                                        VAR_L_LOC vehicles.L_LOC%TYPE ) is
+--- takes in vehicle owner id , vehicles type , make ,year , tag , st , seating capacity , lugg capacity and latest loc as input---
+begin
+    INSERT INTO vehicleS VALUES (V_seq.nextval,VAR_VO_ID,VAR_V_TYPE,VAR_V_MAKE,VAR_V_YEAR,VAR_V_TAG,VAR_ST,VAR_S_CAP,VAR_L_CAP,VAR_L_LOC);
+    dbms_output.put_line('new vehicle added');
+    exception
+    WHEN OTHERS THEN
+    DBMS_OUTPUT.PUT_LINE('Invalid Input');
+END; 
+/
+EXEC Add_vehicle (1, 'SUV','Honda', 2018, 'ABC12M3', 'MD', 7, 5, 'Baltimore');
+EXEC Add_vehicle (2, 'Minivan','Chrysler', 2019, 'AAA123', 'MD', 7, 7, 'Baltimore');
+EXEC Add_vehicle (2, 'Bus','GMC', 2010, 'AAA555', 'MD', 55, 100, 'Baltimore');
+EXEC Add_vehicle (3, 'Sedan','Ford', 2015, 'ZZZ12M3', 'VA', 5, 5, 'Baltimore');
+/
+
+Select * from vehicles;
+/
+
+---4. Display vehicle: Given a vehicle type, show information about all vehicles of that type
+
+SET SERVEROUTPUT ON;
+CREATE OR REPLACE PROCEDURE DISPLAY_VEHICLES(VAR_V_TYPE VARCHAR2) IS
+CURSOR C1 IS SELECT * FROM vehicles WHERE V_TYPE = VAR_V_TYPE;----- takes vehicle type as input ex - sedan ---
+v_count int;
+BEGIN
+Select count(*) into v_count from  vehicles where V_TYPE = VAR_V_TYPE;---to check if such VEHICLE exists or not
+    IF v_count = 0 THEN
+        DBMS_OUTPUT.PUT_LINE('No such vehicle type');
+        DBMS_OUTPUT.PUT_LINE('CHOOSE FROM Sedan, Truck, Crossover, Minivan, SUV, Bus' );
+    ELSE
+    DBMS_OUTPUT.PUT_LINE('DISPLAY VEHICLES OF TYPE  ' || VAR_V_TYPE );
+    DBMS_OUTPUT.PUT_LINE('--------------------------------------------------------');
+    dbms_output.put_line(RPAD('V ID', 20)||RPAD('VO ID', 20)||RPAD('V_MAKE', 20)||
+                         RPAD('YEAR', 20)||RPAD('V_TAG', 20)||RPAD('ST', 20)||RPAD('S_CAP', 20)||RPAD('L_CAP', 20)||RPAD('L_LOC', 20));
+for i in c1
+    loop
+dbms_output.put_line( RPAD(i.V_ID, 20) || RPAD(i.VO_ID, 20) || RPAD(i.V_MAKE, 20) ||RPAD(i.V_YEAR,20)||
+                           RPAD(i.V_TAG, 20)|| RPAD(i.ST, 20) || RPAD(i.S_CAP, 20)||RPAD(i.L_CAP, 20)||RPAD(i.L_LOC, 20) );
+    END LOOP;
+    END IF;
+exception
+WHEN NO_DATA_FOUND THEN
+DBMS_OUTPUT.PUT_LINE('NO RECORDS');
+WHEN OTHERS THEN
+DBMS_OUTPUT.PUT_LINE('Error');
+END;
+/
+
+EXEC DISPLAY_vehicles('Minivan');
+select * from vehicles;
+/
+
+---5.  Delete  vehicles: Given an owner’s email, delete all vehicles of that owner
+
+SELECT * FROM vehicle_owner;
+
+CREATE OR REPLACE PROCEDURE Delete_vehicle(VAR_EMAIL VARCHAR2) IS --- takes in email id of existing customer 
+O_count int;
+
+begin
+Select count(*) into O_count from  vehicle_owner where email_ID = VAR_EMAIL ;
+if O_count = 0 then
+    dbms_output.put_line('no such vehcile found');
+
+else
+update vehicle_owner set 
+O_status = 0 where email_ID = VAR_EMAIL;
+
+END IF;
+exception
+WHEN NO_DATA_FOUND THEN
+DBMS_OUTPUT.PUT_LINE('NO RECORDS');
+WHEN OTHERS THEN
+DBMS_OUTPUT.PUT_LINE('Error');
+END;
+/
+
+
+
+
+exec delete_vehicle('pat@yahoo.com');
+/
+
+select * from vehicle_owner;
+select * from vehicles;
+
+
+---6. Vehicles and owners: Show all vehicles (tags, make, vehicle type) and their owners (name, email)
+
+create or replace procedure show_vehicle is
+cursor c1 is select v_tag,v_make,v_type,EMAIL_ID,VO_NAME,O_STATUS FROM vehicles, vehicle_OWNER WHERE vehicles.VO_ID = vehicle_OWNER.VO_ID ;
+begin
+    DBMS_OUTPUT.PUT_LINE('show vehicle');
+    DBMS_OUTPUT.PUT_LINE('--------------------------------------------------------');
+    dbms_output.put_line(RPAD('TAG', 20)||RPAD('MAKE', 20)||RPAD('VEHICLE TYPE', 20)||
+                         RPAD('EMAIL ID', 20)||RPAD('OWNER NAME', 20) ||RPAD('OWNER STATUS', 20));
+for i in c1
+    loop
+dbms_output.put_line( RPAD(i.v_tag, 20) || RPAD(i.v_make, 20) || RPAD(i.v_type, 20) ||RPAD(i.EMAIL_ID,20)||
+                           RPAD(i.VO_NAME, 20) || RPAD(i.O_STATUS, 20) );
+    END LOOP;
+exception
+WHEN NO_DATA_FOUND THEN
+DBMS_OUTPUT.PUT_LINE('NO RECORDs');
+WHEN OTHERS THEN
+DBMS_OUTPUT.PUT_LINE('Error....');
+end;
+/
+EXEC show_vehicle;
+/
+--------------------------------------------------------------------------------------------------------------------------------------------
+--MEMBER 2
+--8. Add customer: Given all pertinent information, add a customer to the database
+
+
+create or replace procedure Add_customer(CNAME customers.C_NAME%TYPE, ---name of customer 
+                                        EMAIL customers.C_EMAIL%TYPE , --- email of customer 
+                                        CCC customers.C_CCN%TYPE, ---- cradit card details 
+                                        cstatus customers.c_status%type ) is -- status active or not (0,1)
+begin 
+INSERT INTO customers VALUES (C_seq.nextval,CNAME,EMAIL,CCC,cstatus);
+dbms_output.put_line('new customer added');
+exception
+WHEN OTHERS THEN
+DBMS_OUTPUT.PUT_LINE('Invalid Input');
+END;
+
+/
+EXEC Add_customer('Zlatan', 'zlatan@acmilan.com',777222,1);
+EXEC Add_customer('Ronaldo', 'ronaldo@juventus.com',777111,1);
+EXEC Add_customer('Mia Ham', 'hamm@usa.com',777333,1);
+EXEC Add_customer('Rapinoe', 'rapinoe@usa.com',777444,1);
+/
+select* from customers;
+
+--9.  Delete a customer. Given a customer’s email delete from the database
+
+CREATE OR REPLACE PROCEDURE Delete_customer(email VARCHAR2) IS --- takes in email id of existing customer 
+C_count int;
+
+begin
+Select count(*) into C_count from  customers where C_EMAIL = email;
+if C_count = 0 then
+    dbms_output.put_line('no such customer found');
+
+else
+update customers set 
+c_status = 0 where C_EMAIL = email ;
+
+END IF;
+exception
+WHEN NO_DATA_FOUND THEN
+DBMS_OUTPUT.PUT_LINE('NO RECORDS');
+WHEN OTHERS THEN
+DBMS_OUTPUT.PUT_LINE('Error');
+END;
+/
+
+--EXEC Delete_customer()
+
+--10.  Find customer ID: Given a customer’s email, return the customer’s id.
+
+CREATE OR REPLACE PROCEDURE Find_customer_ID(EMAIL customers.C_EMAIL%TYPE )IS  ----takes in email id of customer 
+C_COUNT INT;
+N_AME customers.C_NAME%TYPE;
+CID   customers.C_ID%TYPE;
+
+Begin 
+Select count(*) into C_count from  customers where C_EMAIL = email;
+if C_count = 0 then
+        dbms_output.put_line('no such customer found');
+
+else 
+select customers.C_NAME, customers.C_ID into N_AME, CID 
+from customers where C_EMAIL = email;
+    dbms_output.put_line(RPAD('NAME', 20)||RPAD('ID', 20));
+    dbms_output.put_line('----------------------------------');
+    dbms_output.put_line(RPAD(N_AME , 20)||RPAD(CID , 20));
+END IF;
+exception
+WHEN NO_DATA_FOUND THEN
+DBMS_OUTPUT.PUT_LINE('NO RECORDS');
+WHEN OTHERS THEN
+DBMS_OUTPUT.PUT_LINE('Error');
+END;
+/
+
+EXEC find_customer_id ('hamm@usa.com');
+EXEC find_customer_id ('zlatan@acmilan.com');
+/
+
+
+--11. Show all customers
+
+create or replace procedure show_CUSTOMERS is
+cursor c1 is select C_ID ,C_NAME ,C_EMAIL, C_CCN, C_STATUS FROM CUSTOMERS; 
+BEGIN
+    DBMS_OUTPUT.PUT_LINE( 'SHOW ALL CUSTOMERS');
+    DBMS_OUTPUT.PUT_LINE('--------------------------------------------------------');
+    dbms_output.put_line(RPAD('ID', 20)||RPAD('NAME', 20)||RPAD('EMAIL', 20)|| RPAD('CC NUM', 20) || RPAD('CUSTOMER STATUS', 20));
+	for i in c1
+    loop
+    dbms_output.put_line( RPAD(i.C_ID, 20) || RPAD(i.C_NAME, 20) || RPAD(i.C_EMAIL, 20) ||RPAD(i.C_CCN,20) ||RPAD(i.C_STATUS,20));
+    END LOOP;
+exception
+WHEN NO_DATA_FOUND THEN
+DBMS_OUTPUT.PUT_LINE('NO RECORDS');
+WHEN OTHERS THEN
+DBMS_OUTPUT.PUT_LINE('Error');
+end;
+/
+EXEC show_CUSTOMERS;
+
+
+
+
+--12.  Change credit card: Given a customer’s id and a new credit card number, update the customer’s record with the new credit card
+
+CREATE OR REPLACE PROCEDURE UPDATE_customer_CCN( CID  customers.C_ID%TYPE, N_CCN customers.C_CCN%TYPE)IS
+C_COUNT INT; ---takes in c_id and new ccn of a customer 
+
+Begin 
+Select count(*) into C_count from  customers where CID = C_ID;
+if C_count = 0 then
+        dbms_output.put_line('NO RECORDS FOUND');
+
+else 
+UPDATE CUSTOMERS
+SET C_CCN = N_CCN
+WHERE C_ID = CID;
+
+    dbms_output.put_line(RPAD('ID ', 20)||RPAD('NEW CC NUM', 20));
+    dbms_output.put_line('----------------------------------');
+    dbms_output.put_line(RPAD(CID , 20)||RPAD(N_CCN , 20));
+END IF;
+exception
+WHEN NO_DATA_FOUND THEN
+DBMS_OUTPUT.PUT_LINE('NO RECORDS');
+WHEN OTHERS THEN
+DBMS_OUTPUT.PUT_LINE('Error');
+END;
+/
+EXEC UPDATE_customer_CCN(2 ,777777);
+-----------------------------------------------------------------------------------------------------------------------------------------
+
+
+--MEMBER 3
+--14
+
+Create or replace procedure ADD_DISTANCE ( VAR_SRC_TOWN DISTANCES.SRC_TOWN%TYPE, -- source town 
+                                            VAR_SRC_STATE DISTANCES.SRC_STATE%TYPE, --- source state 
+                                            VAR_DES_TOWN DISTANCES.DES_TOWN%TYPE, ----- destination town 
+                                            VAR_DES_STATE DISTANCES.DES_STATE%TYPE, ------ destination state
+                                            VAR_DIST DISTANCES.DIST%TYPE)------ distance between towns 
+IS
+BEGIN
+INSERT INTO DISTANCES VALUES (VAR_SRC_TOWN,VAR_SRC_STATE,VAR_DES_TOWN ,VAR_DES_STATE, VAR_DIST);
+dbms_output.put_line('A new distance added');
+exception
+WHEN OTHERS THEN
+DBMS_OUTPUT.PUT_LINE('Invalid Input');
+END;
+/
+
+
+exec ADD_DISTANCE('Baltimore', 'MD', 'College Park', 'MD', 28 );
+exec ADD_DISTANCE('College Park', 'MD','Baltimore', 'MD',  28 );
+
+exec ADD_DISTANCE('Alexandria', 'VA', 'College Park', 'MD', 14);
+exec ADD_DISTANCE('College Park', 'MD','Alexandria', 'VA',  14);
+
+exec ADD_DISTANCE('Baltimore', 'MD', 'New York', 'NY', 170);
+exec ADD_DISTANCE('New York', 'NY','Baltimore', 'MD',  170);
+
+exec ADD_DISTANCE('Baltimore', 'MD', 'Philadelphia', 'PA', 90);
+exec ADD_DISTANCE('Philadelphia', 'PA','Baltimore', 'MD',  90);
+
+exec ADD_DISTANCE('Olney', 'MD', 'Arbutus', 'MD', 21);
+exec ADD_DISTANCE('Arbutus', 'MD','Olney', 'MD',  21);
+
+exec ADD_DISTANCE('College Park', 'MD', 'Olney', 'MD', 14);
+exec ADD_DISTANCE('Olney', 'MD','College Park', 'MD',  14);
+
+exec ADD_DISTANCE('Olney', 'MD', 'Ellicott City', 'MD', 16);
+exec ADD_DISTANCE('Ellicott City', 'MD','Olney', 'MD', 16);
+
+exec ADD_DISTANCE('Ellicott City', 'MD', 'Baltimore', 'MD', 12);
+exec ADD_DISTANCE( 'Baltimore', 'MD','Ellicott City', 'MD', 12);
+
+exec ADD_DISTANCE('Baltimore', 'MD', 'Towson', 'MD', 8);
+exec ADD_DISTANCE('Towson', 'MD','Baltimore', 'MD',  8);
+
+exec ADD_DISTANCE('Towson', 'MD', 'College Park', 'MD', 34);
+exec ADD_DISTANCE('College Park', 'MD','Towson', 'MD',  34);
+
+Select * from distances;
+/
+
+
+--15 Available rides: Given a starting point, ending point, number of people to be transported, total number of luggage, 
+--show available vehicles that can be hired. 
+SELECT * FROM vehicles;
+SELECT * FROM distances;
+create or replace  PROCEDURE Available_rides (SRCT varchar2,DEST varchar2 ,SCAP int, LCAP int) is
+-- takes source town destination town , seating capacity , lugg capacity as input 
+cursor c1 is
+select V_ID,v_tag ,v_MAKE,S_CAP ,L_CAP,L_LOC as vehicle_location
+from vehicles , distances where L_LOC = SRCT and DES_TOWN = DEST AND SRC_TOWN = SRCT
+and S_CAP >= SCAP and L_CAP >= LCAP;
+R_count  int ; --- it is count of number of rides avilable 
+---- curser is taking all information from distance and Vehicles table l_loc == latest location of vichle 
+begin
+
+select count(*) into R_Count from vehicles , distances WHERE L_LOC = SRCT and DES_TOWN = DEST AND SRC_TOWN = SRCT
+and S_CAP >= SCAP and L_CAP >= LCAP;
+dbms_output.put_line(R_COUNT);
+if  R_Count = 0 then ------------------- means there is no vichle avilabe for selected towns 
+dbms_output.put_line('Source Town : '|| SRCT );
+dbms_output.put_line('No Rides avaiables');
+
+else
+dbms_output.put_line('=====================================================================================================================');
+dbms_output.put_line(RPAD('Available_rides :',30)||RPAD(R_Count,30));
+dbms_output.put_line('======================================================================================================================');
+dbms_output.put_line(RPAD('Source Town :',30)||RPAD(SRCT,30));
+dbms_output.put_line('-----------------------------------------------------------------------------------------------------------------------');
+dbms_output.put_line(RPAD('ID',20)||RPAD('TAG',20)|| RPAD('MAKE',20)||RPAD('SEATING CAPACITY',20)|| RPAD('LUG CAPACITY',20)||  RPAD('LOCATION',20));
+dbms_output.put_line('------------------------------------------------------------------------------------------------------------------------');
+
+for i in c1 
+loop
+
+dbms_output.put_line(RPAD(i.v_ID, 20)||RPAD(i.v_tag, 20)|| RPAD(i.V_MAKE, 20)||RPAD(i.S_CAP, 20)||RPAD(i.L_CAP, 20)|| RPAD(i.vehicle_location, 20));
+
+end loop;
+dbms_output.put_line('-------------------------------------------------------------------------------------------------------------------');
+end if;
+EXCEPTION
+WHEN NO_DATA_FOUND THEN
+DBMS_OUTPUT.PUT_LINE('NO RECORD FOR THIS TOWN');
+WHEN OTHERS THEN
+DBMS_OUTPUT.PUT_LINE('Error');
+end;
+/
+
+--MEMBER 4
+--17
+
+Create or replace procedure ADD_TRIP(VAR_C_ID  TRIPS.C_ID%TYPE, VAR_VO_ID  TRIPS.VO_ID%TYPE,
+                                        VAR_V_ID TRIPS. V_ID%TYPE,VAR_SRC_TOWN  TRIPS.SRC_TOWN%TYPE,VAR_SRC_STATE TRIPS.SRC_STATE%TYPE,
+                                        VAR_DES_TOWN  TRIPS.DES_TOWN%TYPE, VAR_DES_STATE  TRIPS.DES_STATE%TYPE,
+                                        VAR_TRIPDATE  TRIPS.TRIP_DATE%TYPE, VAR_NUM_TRV TRIPS.NUM_TRV%TYPE, VAR_FARE TRIPS.TRIP_FARE%TYPE,VAR_LUG TRIPS.LUGGAGE%TYPE) IS
+--takes in Customer id , Vehicle owner id ,  Vehicle id , src town , state , destination town ,state ,date ,number of travlers , fare and luggage as input 
+--and insert it into thr trips table										
+BEGIN
+INSERT INTO TRIPS VALUES(T_seq.NEXTVAL,VAR_C_ID, VAR_VO_ID ,VAR_V_ID,VAR_SRC_TOWN,VAR_SRC_STATE,VAR_DES_TOWN,VAR_DES_STATE,VAR_TRIPDATE,VAR_NUM_TRV,VAR_FARE,VAR_LUG);
+dbms_output.put_line('A new trip added');
+update Vehicles set L_LOC = VAR_DES_TOWN where v_id =  VAR_V_ID;
+---- after taking trip l_loc of Vehicle  will change to destiontion town of trip in Vehicles table
+exception
+WHEN OTHERS THEN
+DBMS_OUTPUT.PUT_LINE('Invalid Input');
+END;
+/
+
+Select * from Trips;
+Select * from Vehicles;
+select * from vehicle_owner;
+--
+/
+--------------• Mia Hamm with one more person need to go from Baltimore to Philadelphia and they have 3 luggages.
+EXEC Available_rides('Baltimore', 'Philadelphia',2,3 );
+/
+--making trip 
+EXEC ADD_TRIP(3,2,2,'Baltimore','MD','Philadelphia','PA',date '2020-05-01', 2 , null , 3);
+
+--------------•	Zlatan wants to take the entire AC Milan team of 25 people from Baltimore to NYC and they have 50 luggages.-----
+
+EXEC Available_rides('Baltimore', 'New York',25,50 );
+
+--making trip
+EXEC ADD_TRIP(1,2,3,'Baltimore','MD','New York','NY',date '2020-05-31', 25 , null ,50);
+--Ronaldo is in NYC on May 31, 2020, and wants to visit Baltimore with all the Juventus team of 30 people, with 80 luggages.
+EXEC ADD_TRIP(2,2,3,'New York','NY','Baltimore','MD',date '2020-05-31', 30 , null ,80);
+
+-------------•	Megan Rapinoe needs to go from Baltimore, MD to  College Park, MD
+
+EXEC Available_rides('Baltimore', 'College Park',1,0 );
+--Rapinoe needs to go with Pat’s sedan from Baltimore, MD to  College Park, MD on June 1, 2020.
+EXEC ADD_TRIP(4,3,4,'Baltimore','MD','College Park','MD',date '2020-06-1', 1 , null ,0);
+-------------•	Megan Rapinoe needs to from College Park, MD to Olney MD
+
+EXEC Available_rides('College Park', 'Olney',1,0 );
+--Rapinoe needs to go with Pat’s sedan from College Park, MD to Olney MD, on June 1, 2020.
+EXEC ADD_TRIP(4,3,4,'College Park','MD','Olney','MD',date '2020-06-1', 1 , null ,0);
+-------------• Ronaldo goes from Alexandria VA to College Park MD
+--Rapinoe needs to go with Pat’s sedan from Olney, MD to Arbutus, MD, on June 1, 2020.
+EXEC ADD_TRIP(4,3,4,'Olney','MD','Arbutus','MD',date '2020-06-1', 1 , null ,0);
+
+
+
+-------------------------------------------------------------------------------
+EXEC Available_rides('Alexandria', 'College Park',2,1 );
+
+-------------• Ronaldo goes from College Park MD, to Olney MD
+
+EXEC Available_rides('College Park', 'Olney',1,0 );
+
+-------------•	Ronaldo goes from Olney MD to Ellicott City MD
+
+EXEC Available_rides('Olney', 'Ellicott City',1,0 );
+
+-------------•	Ronaldo goes from Ellicott City MY to Baltimore MD
+
+EXEC Available_rides('Ellicott City', 'Baltimore',1,0 );
+
+-------------•	Ronaldo goes from Baltimore MD to NYC, NY
+
+EXEC Available_rides('Baltimore', 'New York',1,0 );
+---	Ronaldo goes from Baltimore MD, to NYC, NY on Feb 3, 2020
+EXEC ADD_TRIP(2,1,1,'Baltimore','MD','New York','NY',date '2020-02-3', 1 , null ,0);
+
+
+/
+---------------------------------------------------------------------------
+--MEMBR 4 TASK
+
+--Ronaldo goes from Alexandria VA to College Park MD on Feb 1 2020 (pick a  car of your choice)
+EXEC ADD_TRIP(2,1,1,'Alexandria','VA','College Park','MD',date '2020-02-1', 1 , null ,0);
+
+--Ronaldo goes from College Park MD, to Baltimore MD on Feb 2 2020
+EXEC ADD_TRIP(2,3,4,'College Park','MD','Baltimore','MD',date '2020-02-2', 1 , null ,0);
+--18
+create or replace procedure return_TRIP_ID(VAR_C_ID in number,VAR_VO_ID in number,--Customer ID
+                                            VAR_SRC_TOWN in varchar2,VAR_SRC_STATE in varchar2,VAR_DES_TOWN in varchar2,--Source Town,Source State
+                                            VAR_DES_STATE in varchar2,VAR_TRIP_DATE in date)--Destination State,Trip Date
+IS
+cursor c1 is 
+select t2.TRIP_ID from TRIPS t1,TRIPS t2 where t1.TRIP_ID=t2.TRIP_ID and
+t1.C_ID=VAR_C_ID and t1.VO_ID= VAR_VO_ID and t1.SRC_TOWN = VAR_SRC_TOWN and 
+t1.SRC_STATE = VAR_SRC_STATE and t1.DES_TOWN = VAR_DES_TOWN and 
+t1.DES_STATE = VAR_DES_STATE and t1.TRIP_DATE = VAR_TRIP_DATE;
+
+VAR_TRIP_ID integer;
+VAR_TRIP_ID_COUNT integer;
+
+begin 
+    select count(t2.TRIP_ID) into VAR_TRIP_ID_COUNT from TRIPS t1,TRIPS t2 where t1.TRIP_ID=t2.TRIP_ID and
+t1.C_ID = VAR_C_ID and t1.VO_ID = VAR_VO_ID and
+t1.SRC_TOWN = VAR_SRC_TOWN and t1.SRC_STATE = VAR_SRC_STATE and
+t1.DES_TOWN = VAR_DES_TOWN and t1.DES_STATE = VAR_DES_STATE and
+t1.TRIP_DATE = VAR_TRIP_DATE;
+if VAR_TRIP_ID_COUNT = 0
+then
+    dbms_output.put_line('no such trip');
+
+else
+    dbms_output.put_line('=================================================');
+    dbms_output.put_line( LPAD(' TRIP ID IS ',30));
+    dbms_output.put_line('=================================================');
+
+open c1;
+loop
+    fetch c1 into VAR_TRIP_ID;
+exit when c1%notfound;
+dbms_output.put_line(LPAD(VAR_TRIP_ID,30));
+end loop;
+close c1;
+end if;
+exception
+when no_data_found then
+dbms_output.put_line('no such trip');
+When Others then
+DBMS_OUTPUT.PUT_LINE('Error');
+end;
+
+/
+
+--Returning Trip ID's
+Exec return_TRIP_ID(3,2,'Baltimore','MD','Philadelphia','PA',date '2020-05-01');
+Exec return_TRIP_ID(1,2,'Baltimore','MD','New York','NY',date '2020-05-31');
+Exec return_TRIP_ID(2,2,'New York','NY','Baltimore','MD',date '2020-05-31');
+Exec return_TRIP_ID(4,3,'Baltimore','MD','College Park','MD',date '2020-06-1');
+Exec return_TRIP_ID(4,3,'College Park','MD','Olney','MD',date '2020-06-1');
+Exec return_TRIP_ID(4,3,'Olney','MD','Arbutus','MD',date '2020-06-1');
+Exec return_TRIP_ID(2,1,'Alexandria','VA','College Park','MD',date '2020-02-1');
+Exec return_TRIP_ID(2,3,'College Park','MD','Baltimore','MD',date '2020-02-2');
+Exec return_TRIP_ID(2,1,'Baltimore','MD','New York','NY',date '2020-02-3');
+
+
+Select * from Payment;
+SELECT * FROM trips;
+Select * from distances;
+Select * from Customers;
+Select * from Vehicles;
+select * from vehicle_owner;
+SELECT * from Vehicle_Types;
+
+
+
+------------------------------------------------------
+set serveroutput on;
+
+--20)Calculate payment: Given a trip id, calculate the payment amount and update the trip table.
+
+Create or Replace function PAYMENT_CALC( VAR_TRIP_ID in number)return float is
+VAR_V_RATE float;--
+VAR_DIST float;--Distance
+VAR_NUM_TRV number;--Number of Travellers
+VAR_SRC_STATE varchar2(30);--Source state
+VAR_DES_STATE varchar2(30);--Destination State
+VAR_LUGGAGE number;--Luggage
+VAR_TRIP_DATE date;--Trip Date
+VAR_L_LOC varchar2(50);--Last Location
+--ADDEDFARE_V1 float;
+ADDEDFARE float;
+ADDEDFARE_V2 float;
+ADDEDFARE_V3 number;
+VAR_BASE_FARE float;--Base Fare
+PAYMENT float;--Payment
+
+BEGIN
+
+Select DIST, V_RATE, NUM_TRV,TRIPS.SRC_STATE, TRIPS.DES_STATE, LUGGAGE,TRIP_DATE,L_LOC
+into VAR_DIST, VAR_V_RATE, VAR_NUM_TRV,VAR_SRC_STATE,VAR_DES_STATE,VAR_LUGGAGE,VAR_TRIP_DATE,VAR_L_LOC
+from DISTANCES, VEHICLE_TYPES, TRIPS, VEHICLES
+where 
+TRIP_ID = VAR_TRIP_ID and DISTANCES.SRC_TOWN = TRIPS.SRC_TOWN and DISTANCES.SRC_STATE = TRIPS.SRC_STATE 
+and DISTANCES.DES_STATE = TRIPS.DES_STATE and DISTANCES.DES_TOWN = TRIPS.DES_TOWN and TRIPS.VO_ID = VEHICLES.VO_ID
+and VEHICLES.V_TYPE = VEHICLE_TYPES.V_TYPE and VEHICLES.V_ID = TRIPS.V_ID ;
+
+IF VAR_TRIP_DATE between (date '2019-12-20') and(date '2020-01-03') then 
+    
+    VAR_V_RATE := VAR_V_RATE*(110/100);
+else
+    VAR_V_RATE := VAR_V_RATE;
+end if;
+
+if VAR_LUGGAGE !=0 then
+    ADDEDFARE_V2 := VAR_LUGGAGE*5;
+else 
+    ADDEDFARE_V2 := VAR_LUGGAGE;
+end if;
+
+if VAR_SRC_STATE != VAR_DES_STATE then
+    ADDEDFARE_V3 := 20;
+else 
+    ADDEDFARE_V3 := 0;
+end if;
+
+if VAR_NUM_TRV <> 0 then 
+ADDEDFARE := ADDEDFARE_V2 + ADDEDFARE_V3;
+VAR_BASE_FARE := (VAR_DIST * VAR_V_RATE * VAR_NUM_TRV);
+PAYMENT := VAR_BASE_FARE + ADDEDFARE;
+else 
+ADDEDFARE :=  ADDEDFARE_V2 + ADDEDFARE_V3;
+VAR_BASE_FARE := (VAR_DIST * VAR_V_RATE * 1);
+PAYMENT := VAR_BASE_FARE + ADDEDFARE;
+end if; 
+
+return payment;
+
+END;
+/
+---20 2nd Half
+
+
+create or replace procedure PAYMENT_CALCULATION(TID INT)IS 
+VAR_PAYMENT FLOAT;
+BEGIN
+VAR_PAYMENT := PAYMENT_CALC(TID); --Using above function PAYMENT_CALC 
+Dbms_output.put_line(VAR_PAYMENT);
+update trips set trip_fare = VAR_PAYMENT where trip_id = TID;
+exception
+when no_data_found then
+dbms_output.put_line('No such record.');
+When Others then
+DBMS_OUTPUT.PUT_LINE('Error');
+end;
+/
+-- Calculating Trip Fare using trip id and Updating it in Trips Table
+EXEC PAYMENT_CALCULATION(1);
+EXEC PAYMENT_CALCULATION(2);
+EXEC PAYMENT_CALCULATION(3);
+EXEC PAYMENT_CALCULATION(4);
+EXEC PAYMENT_CALCULATION(5);
+EXEC PAYMENT_CALCULATION(6);
+EXEC PAYMENT_CALCULATION(7);
+EXEC PAYMENT_CALCULATION(8);
+EXEC PAYMENT_CALCULATION(9);
+
+
+
+SELECT * FROM TRIPS;
+/
+--21) Make payment: Given a trip id, find the payment amount. Then charge the customer and credit the owner in the payment table (two records)
+
+SELECT * FROM trips;
+create or replace procedure Add_PAYMENT (VAR_TRIP_ID INT) is
+VAR_C_ID INT;
+VAR_VO_ID INT;
+VAR_PAY float;
+t_date DATE;
+begin 
+
+SELECT C_ID , VO_ID, TRIP_DATE INTO VAR_C_ID , VAR_VO_ID, t_date FROM TRIPS WHERE TRIP_ID = VAR_TRIP_ID;
+VAR_PAY := PAYMENT_CALC(VAR_TRIP_ID);
+    INSERT INTO PAYMENT VALUES (P_seq.nextval,VAR_TRIP_ID,VAR_C_ID,NULL,NULL,-VAR_PAY,t_date);--Customer is paying
+    INSERT INTO PAYMENT VALUES (P_seq.nextval,VAR_TRIP_ID,NULL,VAR_VO_ID,VAR_PAY,NULL,t_date);--Vehicle Owner is receiving the amount
+    dbms_output.put_line('PAYMENT ADDED');
+exception
+When Others then
+DBMS_OUTPUT.PUT_LINE('Invalid Input');
+end;
+/
+--Updating the payment table with (Vehicle owner and Customer) transactions
+EXEC Add_PAYMENT(1);
+EXEC Add_PAYMENT(2);
+EXEC Add_PAYMENT(3);
+EXEC Add_PAYMENT(4);
+EXEC Add_PAYMENT(5);
+EXEC Add_PAYMENT(6);
+EXEC Add_PAYMENT(7);
+EXEC Add_PAYMENT(8);
+EXEC Add_PAYMENT(9);
+
+
+Select * from Payment;
+
+-------------------------------------------------------------------------------------------------------------------------------------------
+
+--
+--Select * from Payment;
+--SELECT * FROM trips;
+--Select * from distances;
+--Select * from Customers;
+--Select * from Vehicles;
+--select * from vehicle_owner;
+--SELECT * from Vehicle_Types;
+/
+
+------------------------------------------------------------------------------------------------------------------------------------------------
+----REPORTS---
+
+--Vehicles by states. Show a report that lists each state and the total number of vehicles registered in that state.
+
+--MEMBER 1 REPORT 1
+SET SERVEROUTPUT ON
+
+CREATE OR REPLACE PROCEDURE Vehicles_by_State_Name AS
+cursor c is select ST,count(V_id) as NUMV from vehicles group by ST;
+BEGIN
+    dbms_output.put_line(' Vehicles by State Name' );
+    DBMS_OUTPUT.PUT_LINE('--------------------------------------------------------');
+    dbms_output.put_line('  State name'  || chr(9)||chr(9)||chr(9) ||  ' Number of vehicles' );
+	for i in c
+    loop
+	dbms_output.put_line( RPAD(i.ST, 20) || LPAD(i.NUMV,20));
+    END LOOP;
+    exception
+    When Others then
+    DBMS_OUTPUT.PUT_LINE('Error');
+end;
+
+
+
+/
+EXEC Vehicles_by_State_Name;
+/
+
+
+--------------------------------------------------------------
+--Delete an owner. Given an owner’s email, delete that owner. Make sure to consider the case that the owner has vehicles (possibly multiple ones).  What will you do --with the owner’s vehicles? Also, verify that the owner has been deleted (run a query and show results).
+
+--MEMBER 1 REPORT 2
+create or replace PROCEDURE Delete_vehicle_owner (email varchar2) IS --- takes in email id 
+vo_count int;
+
+BEGIN
+dbms_output.put_line('delete vehicle owner');
+Select count(*) into vo_count from  vehicle_owner where email_ID = email;
+if vo_count=0 then
+dbms_output.put_line('No record found for this email, there is no such vehicle owner');
+
+
+else
+delete from payment where payment_id in (
+select payment_id from vehicle_owner,trips,payment,vehicles
+where email_ID = email
+and TRIPS.V_ID = vehicles.V_id
+and trips.VO_ID = vehicles.VO_ID and
+trips.trip_id = payment.trip_id and
+vehicles.VO_ID = vehicle_owner.VO_ID);
+dbms_output.put_line(' Record deleted from payments table ');
+
+
+delete from trips where trip_id in (
+select trip_id from vehicle_owner,trips,vehicles
+where email_ID = email
+and TRIPS.V_ID = vehicles.V_id
+and trips.vo_id = vehicles.vo_ID and
+vehicles.Vo_ID = vehicle_owner.vo_id);
+dbms_output.put_line(' Record deleted from trips table ');
+
+
+delete from vehicles where VO_ID in (
+select V_ID from vehicle_owner , vehicles
+where email_ID = email
+and vehicles.VO_ID =vehicle_owner.VO_id );
+dbms_output.put_line(' Record deleted from vehicles table ');
+
+
+
+delete from vehicle_owner where email_ID = email;
+dbms_output.put_line(' Records deleted from vehicle owner table ');
+dbms_output.put_line(' Records of vehicle owner deleted from all tables ');
+
+end if;
+exception
+	when no_data_found then
+		dbms_output.put_line('No such vehicle owner found');
+end;
+/
+EXEC Delete_vehicle_owner('mili@umbc.edu');
+--EXEC Delete_vehicle_owner('joe@umbc.edu');
+
+--------------------------------------------------------------------------------------------------------------------------------
+--MEMBER 2 REPORT
+SET SERVEROUTPUT ON;
+--3.Best Customers: 
+Create or replace procedure Customer_Name(id in customers.C_ID%type) -- takes in c_id as input 
+is
+Cname Customers.C_name%type;
+Cursor C is Select C_name from CUSTOMERS where C_ID = id;
+Begin 
+    open C;
+    loop
+    fetch C into Cname;
+    exit when C%notfound;
+    dbms_output.put_line(cname);
+    end loop;
+    close C;
+    exception
+    When Others then
+    DBMS_OUTPUT.PUT_LINE('Error');
+end;
+/
+
+
+--3.1 The best 3 customers based on money they spend with the company.
+create or replace procedure Best_three_customers
+is
+VAR_C_ID CUSTOMERS.C_Id%type;
+cursor B1 is Select C_Id  from trips 
+group by C_ID order by sum(TRIP_FARE) desc;
+begin
+dbms_output.put_line('Report: Best_three_customers');
+dbms_output.put_line('--------------------------------------------------------');
+
+
+
+    open B1;
+        loop
+        fetch B1 into VAR_C_ID;
+        exit when B1%rowcount=4 or B1%notfound;
+        Customer_Name(VAR_C_ID);
+        end loop;
+        close B1;
+        exception
+    When Others then
+    DBMS_OUTPUT.PUT_LINE('Error');
+end;
+/
+EXEC Best_three_customers;
+/
+
+
+
+--3.2 The best 3 customers based on mileage travelled 
+create or replace procedure Best_3_customers_by_mileage
+is
+
+VAR_C_ID CUSTOMERS.C_Id%type;
+
+cursor B2 is Select C_Id  from distances , trips 
+Where distances.SRC_TOWN =trips.SRC_TOWN and distances.SRC_STATE =trips.SRC_STATE and
+distances.DES_TOWN =trips.DES_TOWN and distances.DES_STATE =trips.DES_STATE group by C_Id order by sum(dist) desc;
+begin
+    dbms_output.put_line('Report: Best_three_customers_by_mileage');
+    dbms_output.put_line('--------------------------------------------------------');
+
+        open B2;
+        loop
+        fetch B2 into VAR_C_ID;
+        exit when B2%rowcount=4 or B2%notfound;
+        Customer_Name(VAR_C_ID);
+        end loop;
+        close B2;
+        exception
+        When Others then
+        DBMS_OUTPUT.PUT_LINE('Error');
+end;
+/
+EXEC Best_3_customers_by_mileage;
+/
+
+---------------------------------------------------------------
+--4.Worst Customers: 
+--4.1 The worst 3 customers based on money they spend with the company.
+
+create or replace procedure Worst_three_customers
+is
+VAR_C_ID CUSTOMERS.C_ID%type;
+cursor W1 is Select C_ID  from trips 
+group by C_ID order by sum(TRIP_FARE) asc;
+begin
+dbms_output.put_line('Report: Worst_three_customers');
+dbms_output.put_line('--------------------------------------------------------');
+        open W1;
+        loop
+        fetch W1 into VAR_C_ID;
+        exit when W1%rowcount=4 or W1%notfound;
+        Customer_Name(VAR_C_ID);
+        end loop;
+        close W1;
+        exception
+        When Others then
+        DBMS_OUTPUT.PUT_LINE('Error');
+end;
+/
+exec Worst_three_customers;
+/
+
+
+--4.2 The worst 3 customers based on mileage travelled 
+create or replace procedure Worst_3_customers_by_mileage
+is
+VAR_C_ID CUSTOMERS.C_ID%type;
+
+cursor W2 is Select C_ID  from distances , trips 
+Where distances.SRC_TOWN =trips.SRC_TOWN and distances.SRC_STATE =trips.SRC_STATE and
+distances.DES_TOWN =trips.DES_TOWN and distances.DES_STATE =trips.DES_STATE group by C_ID order by sum(dist) asc;
+begin
+dbms_output.put_line('Report: Worst_3_customers_by_mileage');
+dbms_output.put_line('--------------------------------------------------------');
+        open W2;
+        loop
+        fetch W2 into VAR_C_ID;
+        exit when W2%rowcount=4 or W2%notfound;
+        Customer_Name(VAR_C_ID);
+        end loop;
+        close W2;
+        exception
+        When Others then
+        DBMS_OUTPUT.PUT_LINE('Error');
+end;
+/
+exec Worst_3_customers_by_mileage;
+/
+
+
+
+--MEMBER 3:
+--5 One-leg destinations: Given a source town, provide all possible destinations starting from that source (within a single leg) 
+--and show distance in miles
+create or replace PROCEDURE ONE_LEG_DEST (SRCT in varchar2) IS -- takes source town as input 
+cursor c1 is select des_town, dist from distances where SRC_TOWN = SRCT ;
+T_count int;
+BEGIN
+dbms_output.put_line('REPORT OF ONE LEG DESTINATION');
+select count(*) into T_count from distances where SRC_TOWN = SRCT ;
+if T_count=0 then
+dbms_output.put_line('INPUT TOWN '|| SRCT ||' IS NOT AVILABLE RIGHT NOW ');
+else
+
+dbms_output.put_line('=====================================================================');
+dbms_output.put_line(RPAD('Source Town',20)|| RPAD('Destination town', 20)|| RPAD('Distance in miles', 20));
+dbms_output.put_line('=====================================================================');
+
+for i in c1
+loop
+	dbms_output.put_line(RPAD(SRCT ,20)||RPAD(i.des_town,30) ||RPAD( i.dist, 30));
+    dbms_output.put_line('---------------------------------------------------------------------');
+END LOOP;
+end if;	
+EXCEPTION
+WHEN NO_DATA_FOUND THEN
+DBMS_OUTPUT.PUT_LINE('NO RECORD FOR THIS TOWN');
+WHEN OTHERS THEN
+DBMS_OUTPUT.PUT_LINE('Error....');
+end;
+/
+EXEC ONE_LEG_DEST('Baltimore')
+/
+--6 Multi-leg destinations: Given a source town, provide a report showing all possible destinations starting from that source
+--(include multiple legs) and for each pair of <source town, destination town> display total number of miles
+create or replace FUNCTION CALCULATE_TOTAL (R_DIST VARCHAR2)---route distace from temp_distance table as input  
+RETURN NUMBER
+IS
+TOTAL NUMBER := 0;   --- TOTAL distace that will be our out put fot this function
+ROUTE_DIST VARCHAR2 (400) := SUBSTR (R_DIST, 1); -------------------- creating a substring starting from 
+                                                ---second position excluting '+' of '0' position
+L_TOTAL NUMBER := 0;  --- here will store value of 
+
+BEGIN
+LOOP
+
+if INSTR (ROUTE_DIST, '+') > 0 then ------------------------ if there is '+' in sring other then 0 position
+L_TOTAL := SUBSTR (ROUTE_DIST, 1, INSTR (ROUTE_DIST, '+') - 1); ------ this is distance between 2 towns
+----dbms_output.put_line('L_TOTAL')
+ROUTE_DIST := SUBSTR (ROUTE_DIST, INSTR (ROUTE_DIST, '+') + 1); --- new string excluding 'L_total'
+----dbms_output.put_line('ROUTE_DIST')
+else ----- where there is no + in sub string means it's single leg 
+L_TOTAL := ROUTE_DIST;  ------ 
+ROUTE_DIST := null;   ----- its end of trip
+end if;
+
+TOTAL := TOTAL + NVL (L_TOTAL, 0); ------ out put 
+---The NVL() function accepts two arguments. 
+---If first evaluates to null, then NVL() function returns second. If first evaluates to non-null, the NVL() function returns first.
+
+IF ROUTE_DIST IS NULL
+THEN
+--dbms_output.put_line('you cant leave from here ');
+EXIT;
+END IF;
+END LOOP;
+RETURN (TOTAL);
+END;
+/
+--
+
+create or replace PROCEDURE Multi_LEG_Dest(INPUT_CITY in varchar2) as
+cursor c1 is
+select Route,route_DIST,total_DIST FROM TEMP_DISTANCE;
+T_count int;
+begin
+delete from temp_DISTANCE; ------ deleating previous records from table or emptying the table
+insert into temp_DISTANCE value(
+select
+   to_Char( CONNECT_BY_ROOT SRC_TOWN  ||  SYS_CONNECT_BY_PATH(DES_TOWN, '->'))  "path"   , 
+   to_char( SYS_CONNECT_BY_PATH(dist, '+') )"miles"  ,
+  to_char( CALCULATE_TOTAL(sys_connect_by_path(dist,'+'))) "total"  
+from
+  distances
+start with
+  SRC_TOWN = INPUT_CITY
+connect by nocycle
+  prior DES_TOWN = SRC_TOWN and  SRC_TOWN <> INPUT_CITY);
+  
+---- above insert query will insert valuses in temp_distance table as required by task 
+----
+  
+dbms_output.put_line('REPORT OF MULTY LEG DESTINATION');
+dbms_output.put_line('==================================================================================================================================');
+dbms_output.put_line(RPAD('Source Town ->',20)|| RPAD('STOPAGE ->', 20)|| LPAD('DESTINATION  ', 60)|| RPAD('ROUTE DISTANCE', 20)||RPAD('TOTAL DIST', 20));
+dbms_output.put_line('===================================================================================================================================');
+
+for I in c1 
+loop
+dbms_output.put_line(RPAD(I.Route, 100)|| RPAD(I.route_DIST, 30)||RPAD(I.total_DIST, 20));
+dbms_output.put_line('-------------------------------------------------------------------------------------------------------------------------------------');
+
+end loop;
+EXCEPTION
+WHEN NO_DATA_FOUND THEN
+DBMS_OUTPUT.PUT_LINE('NO RECORD FOR THIS TOWN');
+WHEN OTHERS THEN
+DBMS_OUTPUT.PUT_LINE('Error');
+ end;
+/
+--using for loop itrating throught temp_distace table
+SET SERVEROUTPUT ON; 
+EXEC Multi_LEG_Dest('Baltimore');
+/
+
+
+
+--MEMBER 4 REPORT
+--7 Popular destinations: Given a starting town, find the top 2 most popular destinations by searching the trips taken.
+CREATE OR REPLACE PROCEDURE popular_destination_report(VAR_SRC_TOWN IN VARCHAR2)
+IS
+VAR_DES_TOWN trips.des_TOWN%TYPE; ----takes in a variable in  that is source town 
+VAR_COUNT INT;
+CURSOR C1(VAR_SRC_TOWN trips.SRC_STATE%TYPE) IS SELECT des_TOWN,COUNT(src_state) COUNTER from
+(SELECT des_TOWN,src_state from Trips WHERE src_town=VAR_SRC_TOWN) GROUP BY des_TOWN ORDER BY COUNTER DESC;
+
+BEGIN
+    DBMS_OUTPUT.PUT_LINE('------------------------------------------------------------------------------');
+    DBMS_OUTPUT.PUT_LINE(rpad('Report: Popular destinations from ',50)||rpad(VAR_SRC_TOWN,20));
+    DBMS_OUTPUT.PUT_LINE('----------------------------------------------------------------------------');
+    DBMS_OUTPUT.PUT_LINE(rpad('No.',10)||rpad('Destination',40)||rpad('Number of times',20));
+    DBMS_OUTPUT.PUT_LINE('------------------------------------------------------------------------------');
+OPEN C1(VAR_SRC_TOWN);
+LOOP
+    FETCH C1 INTO VAR_DES_TOWN,VAR_COUNT;
+    EXIT WHEN C1%NOTFOUND OR C1%ROWCOUNT > 2;
+    DBMS_OUTPUT.PUT_LINE( rpad(C1%ROWCOUNT,10)||  rpad(VAR_DES_TOWN,40) || rpad(VAR_COUNT,20));
+END LOOP;
+    DBMS_OUTPUT.PUT_LINE('------------------------------------------------------------------------------');
+CLOSE C1;
+EXCEPTION
+WHEN NO_DATA_FOUND THEN
+DBMS_OUTPUT.PUT_LINE('NO POPULER DESTINATION FOR THIS TOWN');
+WHEN OTHERS THEN
+DBMS_OUTPUT.PUT_LINE('Error.');
+END;
+/
+exec popular_destination_report('Baltimore');
+/
+
+
+
+--8 Popular cross state destinations: Given a starting town, find the top 2 most popular destinations that crosses a state border.
+
+CREATE OR REPLACE PROCEDURE popular_cross_state_report(VAR_SRC_TOWN IN trips.src_town%TYPE)
+IS
+VAR_SRC_STATE trips.src_state%TYPE; --the state of the source town
+VAR_DES_TOWN trips.des_TOWN%TYPE; --the destination town
+VAR_COUNT INT; --to hold the counter
+-- this cursor select all destinations from source towns to different states
+CURSOR C1 IS SELECT des_TOWN,COUNT(src_state) COUNTER from (SELECT des_TOWN,src_state from Trips WHERE src_town=VAR_SRC_TOWN AND DES_STATE !=VAR_SRC_STATE) GROUP BY des_TOWN ORDER BY COUNTER DESC;
+BEGIN
+--implicit cursor to hold current source state
+SELECT src_state INTO VAR_SRC_STATE from trips WHERE src_town = VAR_SRC_TOWN AND ROWNUM=1;
+    DBMS_OUTPUT.PUT_LINE('------------------------------------------------------------------------------');
+    DBMS_OUTPUT.PUT_LINE(rpad('Report: Popular cross state destinations from ',50)||rpad(VAR_SRC_TOWN ,20));
+    DBMS_OUTPUT.PUT_LINE('------------------------------------------------------------------------------');
+    DBMS_OUTPUT.PUT_LINE(rpad('No.',10)||rpad('Destination',40)||rpad('Number of times',20));
+OPEN C1;
+LOOP
+  FETCH C1 INTO VAR_DES_TOWN,VAR_COUNT;
+   EXIT WHEN C1%NOTFOUND OR C1%ROWCOUNT > 2;
+    DBMS_OUTPUT.PUT_LINE( rpad(C1%ROWCOUNT,10)||  rpad(VAR_DES_TOWN,40) || rpad(VAR_COUNT,20));
+END LOOP;
+    DBMS_OUTPUT.PUT_LINE('------------------------------------------------------------------------------');
+CLOSE C1;
+EXCEPTION
+WHEN NO_DATA_FOUND THEN
+DBMS_OUTPUT.PUT_LINE('NO CROSS STATE RECORD FOR THIS TOWN');
+WHEN OTHERS THEN
+DBMS_OUTPUT.PUT_LINE('Error....');
+END;
+/
+
+
+EXEC popular_cross_state_report('New York');
+EXEC popular_cross_state_report('Baltimore');
+/
+
+
+
+
+--MEMBER 5 REPORT
+--9 State Financial report: Given a state, provide a report that shows total income of the vehicle owners in that state
+
+
+Create or replace procedure VO_INCOMEBY_STATE(VAR_ST in varchar) IS 
+cursor c1 is select Sum(AMT_POSITIVE) from payment p, vehicles v, TRIPS T
+where v.VO_ID = p.VO_ID and ST = VAR_ST AND V.V_ID = T.V_ID AND P.TRIP_ID = T.TRIP_ID;
+VAR_AMT_POSITIVE number; 
+--s_um number;
+Begin
+    open c1;
+    Loop
+    fetch c1 into VAR_AMT_POSITIVE;
+    exit when c1%NOTFOUND;
+    if VAR_AMT_POSITIVE > 1 then
+    dbms_output.put_line('Report: Sum of Vehicle owner income for state: '|| VAR_ST || ' is ' || VAR_AMT_POSITIVE); 
+    else
+    dbms_output.put_line('No income from this state');
+    end if;
+    End loop;
+    exception
+    When Others then
+    DBMS_OUTPUT.PUT_LINE('Error');
+End;
+/
+Exec VO_INCOMEBY_STATE('MD'); 
+Exec VO_INCOMEBY_STATE('VA'); 
+/
+--10 Monthly financial report : Provide a report that shows total income of the vehicle owners for every single month 
+--(limit it to  one year – 12 months - and print only if there is activity in a given month) 
+
+Create or replace procedure Monthly_financial_report 
+is
+cursor c1 is select sum(AMT_POSITIVE), trunc(t.trip_date, 'Month')
+from payment p, trips t 
+where p.trip_id = t.trip_id
+and t.trip_date <= date '2021-01-1'
+and t.trip_date >= date '2020-01-1'
+
+group by trunc(t.trip_date, 'Month');
+VO_income number;
+VAR_MONTH date;
+Begin
+    dbms_output.put_line('Report: Total income of Vehicle Owners by month:');
+    open c1;
+    Loop
+    fetch c1 into VO_income, VAR_MONTH;
+    exit when c1%NOTFOUND;
+    dbms_output.put_line('Driver income for month '|| VAR_MONTH || ' is '|| VO_income);
+    End loop;
+    EXCEPTION
+    WHEN NO_DATA_FOUND THEN
+    DBMS_OUTPUT.PUT_LINE('NO ACTIVITY');
+    close c1;
+End;
+/
+
+EXEC Monthly_financial_report;
+/
+--11 Overall Financial report: Provide a report that shows total income by destination town. 
+--For example, if there are 5 destinations, you need to print 5 lines each one showing the destination 
+--and total amount for that destination. At the end print the grand total amount.
+
+Create or replace procedure Overall_Financial_report 
+IS
+cursor c1 is select sum(amt_positive), des_town 
+from payment p, trips t
+where t.trip_id = p.trip_id
+group by t.des_town; 
+VO_income number; 
+VAR_TOTAL_income number;  
+VAR_DES_TOWN varchar(100); 
+Begin
+dbms_output.put_line('***Report: Total income by Destination Town***');
+Select sum(amt_positive) into VAR_TOTAL_income from payment;
+dbms_output.put_line('   --- Total Driver income is: '||VAR_TOTAL_income || ' ---');
+    open c1;
+    Loop
+    fetch c1 into VO_income, VAR_DES_TOWN; 
+    exit when c1%NOTFOUND;
+    dbms_output.put_line(VAR_DES_TOWN || ': driver income is '|| VO_income || ' dollars.'); 
+    End loop;
+    exception
+    When Others then
+    DBMS_OUTPUT.PUT_LINE('Error');
+end;
+/
+exec Overall_Financial_report;
+
+
+
+Select * from Vehicles;
+select * from vehicle_owner;
+
+
+/*
+Select * from Payment;
+SELECT * FROM trips;
+Select * from distances;
+Select * from Customers;
+Select * from Vehicles;
+select * from vehicle_owner;
+SELECT * from Vehicle_Types;
+/
+----------------------------------------------------------------------------------------------
